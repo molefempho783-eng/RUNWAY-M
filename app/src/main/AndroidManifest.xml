@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Required before the app can reach the Runway API. Without it every
+        Retrofit call fails with a SecurityException, which is easy to mistake
+        for a server problem (Android Developers, 2026). Added for SCRUM-82.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Lets the app tell "offline" apart from "the request failed", which is
+        what the sync banner shows the user.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+        Android 13+ asks the user before an app may post notifications. Asked once after
+        sign-in, and again from the Notifications screen (SCRUM-162).
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".RunwayApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Runway">
+
+        <!-- Single Activity: hosts the whole nav graph, including auth (splash / onboarding /
+             sign in / biometric) - see runway_nav_graph.xml. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Runway.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            Lets the system camera app write one photo into this app's own storage.
+            Not exported: only the app the URI is handed to can use it, and only for
+            the folder named in file_paths.xml.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Component catalog. Not exported - it is only opened from inside the app. -->
+        <activity
+            android:name=".ui.catalog.CatalogActivity"
+            android:exported="false"
+            android:label="@string/rw_catalog_title"
+            android:parentActivityName=".MainActivity" />
+
+        <!--
+            Receives Firebase Cloud Messaging pushes and new tokens (SCRUM-161). Not exported:
+            only Google Play services delivers to it.
+        -->
+        <service
+            android:name=".data.notifications.RunwayMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Used when FCM shows a console test message itself while the app is in the background. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="general" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_rw_notification" />
+
+        <!-- Lets AppCompat remember the app language on Android 12 and older. Newer versions remember it themselves. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+    </application>
+
+</manifest>
+
+<!--
+Reference List
+IIE, 2026. PROG7314 Module Manual. The Independent Institute of Education (Pty) Ltd.
+Android Developers, 2026. Guide to app architecture. [online] Available at: <https://developer.android.com/topic/architecture> [Accessed 11 September 2026].
+-->
